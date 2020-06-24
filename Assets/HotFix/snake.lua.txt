@@ -1,0 +1,226 @@
+﻿local UnityEngine = CS.UnityEngine
+
+-- 生成食物，根据是否有特殊奖励生成特殊奖励 - FoodMaker.cs -> MakeFood
+xlua.private_accessible(CS.FoodMaker)
+xlua.hotfix(CS.FoodMaker,'MakeFood',function(self,isreward)
+
+	local go = UnityEngine.GameObject.Instantiate(self.Foodprefab)
+	go:GetComponent('Image').sprite = self.FoodSkin[ UnityEngine.Mathf.FloorToInt( CS.UnityEngine.Random.Range(0,self.FoodSkin.Count))]
+	go.transform.SetParent(go.transform,self.foodHolder,false)
+
+	local x = CS.UnityEngine.Random.Range(-1 * self.xlmit + self.xoffset,self.xlmit)
+	local y = CS.UnityEngine.Random.Range(-1 * self.ylmit, self.ylmit)
+
+	go.transform.localPosition = UnityEngine.Vector3(x* 30 , y * 30 ,0)
+	
+	if isreward then
+	   local reward = UnityEngine.GameObject.Instantiate(self.rewardPrefab)
+	   reward.transform.SetParent(reward.transform,self.foodHolder,false);
+	   x = CS.UnityEngine.Random.Range(-1 *self. xlmit+ self.xoffset,self.xlmit)
+	   y = CS.UnityEngine.Random.Range(-1 * self.ylmit, self.ylmit)
+	   reward.transform.localPosition = UnityEngine.Vector3(x* 30 , y * 30 ,0)
+	 end
+end)
+
+-- *******************************************************************************
+
+-- 键盘操控  - SnakeMove.cs -> KeyController
+xlua.private_accessible(CS.SnakeMove)
+xlua.hotfix(CS.SnakeMove,'KeyController',function(self)
+	
+	local isPause = CS.MainUIController.Instance.isPause
+	
+	
+	if UnityEngine.Input.GetKeyDown(UnityEngine.KeyCode.Space) and (isPause == false) and self.isdie == false then
+		self:CancelInvoke()
+		self:InvokeRepeating("Move",0,self.velocity - 0.2)
+	end
+
+	if UnityEngine.Input.GetKeyUp(UnityEngine.KeyCode.Space) and (isPause == false  )and self.isdie == false then
+		self:CancelInvoke()
+		self:InvokeRepeating("Move",0,self.velocity)
+	end
+	
+
+	if UnityEngine.Input.GetKey(UnityEngine.KeyCode.W) and (isPause == false  )and self.y ~= -self.step  and self.isdie == false then
+		self.SnakeHead.transform.localRotation = UnityEngine.Quaternion.Euler(0,0,0)
+		self.x = 0
+		self.y = self.step
+	end
+
+	if UnityEngine.Input.GetKey(UnityEngine.KeyCode.S) and (isPause == false  )and self.y ~= self.step  and self.isdie == false then
+		self.SnakeHead.transform.localRotation = UnityEngine.Quaternion.Euler(0,0,180)
+		self.x = 0
+		self.y = -self.step
+	end
+
+	if UnityEngine.Input.GetKey(UnityEngine.KeyCode.A) and (isPause == false  )and self.x ~= self.step and self.isdie == false then
+		self.SnakeHead.transform.localRotation = UnityEngine.Quaternion.Euler(0,0,90)
+		self.x = -self.step
+		self.y = 0
+	end
+
+	if UnityEngine.Input.GetKey(UnityEngine.KeyCode.D) and (isPause == false  )and self.x ~= -self.step and ( UnityEngine.MainUIController.Instance.isPause)  and self.isdie == false then
+		self.SnakeHead.transform.localRotation = UnityEngine.Quaternion.Euler(0,0,-90)
+		self.x = self.step
+		self.y = 0
+	end
+end)
+
+-- *******************************************************************************
+
+-- 蛇 移动 SnakeMove.cs -> Move
+xlua.hotfix(CS.SnakeMove,'Move',function(self)
+	self.SnakeHead_pos = self.SnakeHead.transform.localPosition
+	
+	self.SnakeHead.transform.localPosition = UnityEngine.Vector3(self.SnakeHead_pos.x + self.x, self.SnakeHead_pos.y + self.y, self.SnakeHead_pos.z)
+
+	if	self.SnakeBodys.Count > 0 then
+		for index = self.SnakeBodys.Count - 2,  0  ,-1 do
+			self.SnakeBodys[index+1].localPosition = self.SnakeBodys[index].localPosition
+		end
+		self.SnakeBodys[0].localPosition = self.SnakeHead_pos
+	end
+end)
+
+
+-- *******************************************************************************
+
+-- 触发检测, 吃食物或者碰撞到墙壁  SnakeMove.cs -> OnTriggerEnter2D
+xlua.private_accessible(CS.SnakeMove)
+xlua.hotfix(CS.SnakeMove,'OnTriggerEnter2D',function(self,collision)
+	if collision.tag == "Food" then
+		self:Grow();
+		local isMakeFood ;
+		if UnityEngine.Random.Range(1,100) < 20 then
+			isMakeFood = true 
+		else  
+			isMakeFood = false
+		end
+		CS.FoodMaker.Instance:MakeFood(isMakeFood)
+		UnityEngine.Object.Destroy(collision.gameObject)
+		CS.MainUIController.Instance:UpdateUI();
+	end
+	if collision.tag == "Reward" then
+		self:Grow();
+		UnityEngine.Object.Destroy(collision.gameObject)
+		CS.MainUIController.Instance:UpdateUI(UnityEngine.Random.Range(1,15) * 10 ,1);
+	end
+
+	if collision.tag == "Wall" and CS.MainUIController.Instance.hasboder == false then
+		if collision.gameObject.name == "Up" then
+			
+			self.SnakeHead.transform.localPosition =  UnityEngine.Vector3(self.SnakeHead.transform.localPosition.x , ( -1 * self.SnakeHead.transform.localPosition.y)  + 30 , self.SnakeHead.transform.localPosition.z)
+		end
+		if collision.gameObject.name == "Down" then
+			self.SnakeHead.transform.localPosition =  UnityEngine.Vector3(self.SnakeHead.transform.localPosition.x , (-1 * self.SnakeHead.transform.localPosition.y) - 40 , self.SnakeHead.transform.localPosition.z)
+		end
+
+		if collision.gameObject.name == "Left" then
+			self.SnakeHead.transform.localPosition =  UnityEngine.Vector3((-1 * self.SnakeHead.transform.localPosition.x)- 30, self.SnakeHead.transform.localPosition.y , self.SnakeHead.transform.localPosition.z)
+		end
+		if collision.gameObject.name == "Right" then
+			self.SnakeHead.transform.localPosition =  UnityEngine.Vector3((-1 * self.SnakeHead.transform.localPosition.x )+ 30 ,self.SnakeHead.transform.localPosition.y  , self.SnakeHead.transform.localPosition.z)
+		end
+	else if collision.tag == "Wall" then 
+		self:Die();
+	end
+
+	if	collision.tag == "SnakeBody" then
+		self:Die();
+	end
+	end
+end)
+
+
+
+-- *******************************************************************************
+
+
+xlua.hotfix(CS.StartUIController,'Blue',function(self,ison)
+	if ison then
+		UnityEngine.PlayerPrefs.SetString("sh","sh01")
+		UnityEngine.PlayerPrefs.SetString("sb01", "sb0101");
+        UnityEngine.PlayerPrefs.SetString("sb02", "sb0102");
+	end
+end)
+
+
+xlua.hotfix(CS.StartUIController,'Yellow',function(self,ison)
+	if ison then
+		UnityEngine.PlayerPrefs.SetString("sh","sh02")
+		UnityEngine.PlayerPrefs.SetString("sb01", "sb0201");
+        UnityEngine.PlayerPrefs.SetString("sb02", "sb0202");
+	end
+end)
+
+xlua.hotfix(CS.StartUIController,'HaveBoder',function(self,ison)
+	if ison then
+		UnityEngine.PlayerPrefs.SetInt("boder",1);
+	end
+end)
+
+xlua.hotfix(CS.StartUIController,'NoHaveBoder',function(self,ison)
+	if ison then
+		UnityEngine.PlayerPrefs.SetInt("boder",0);
+	end
+end)
+
+xlua.hotfix(CS.StartUIController,'GameStart',function(self)
+	UnityEngine.SceneManagement.SceneManager.LoadScene(1)
+end)
+
+
+-- *******************************************************************************
+
+-- 蛇 成长 - SnakeMove.cs -> Grow
+xlua.private_accessible(CS.SnakeMove)
+xlua.hotfix(CS.SnakeMove,'Grow',function(self)
+	local index
+	if self.SnakeBodys.Count % 2 == 0 then
+		index = 0
+	else 
+		index = 1
+	end
+	local Snakebody = UnityEngine.GameObject.Instantiate(self.SnakeBodyPrefab,UnityEngine.Vector3(2000,2000,0),UnityEngine.Quaternion.identity)
+	Snakebody:GetComponent('Image').sprite = self.SnakeSkin[index];
+	Snakebody.transform.SetParent(Snakebody.transform,self.Snake,false)
+	self.SnakeBodys.Add(self.SnakeBodys,Snakebody.transform)
+end)
+
+-- *******************************************************************************
+
+-- 蛇 死亡 Snake.cs -> Die
+xlua.private_accessible(CS.SnakeMove)
+xlua.hotfix(CS.SnakeMove,'Die',function(self)
+	self.isdie = true;
+	self:CancelInvoke();
+	UnityEngine.GameObject.Instantiate(self.ExpFbx);
+	UnityEngine.PlayerPrefs.SetInt("bestl",CS.MainUIController.Instance.length);
+	UnityEngine.PlayerPrefs.SetInt("bests",CS.MainUIController.Instance.score);
+
+	if UnityEngine.PlayerPrefs.GetInt("bestl", 0) < CS.MainUIController.Instance.length then
+		UnityEngine.PlayerPrefs.SetInt("bestl",CS.MainUIController.Instance.length);
+	end
+
+	if UnityEngine.PlayerPrefs.GetInt("bests", 0) < CS.MainUIController.Instance.score then
+		UnityEngine.PlayerPrefs.SetInt("bests",CS.MainUIController.Instance.score);
+	end
+
+	self:StartCoroutine(self: GameOver());
+
+end)
+
+-- *******************************************************************************
+
+-- 添加食物的新皮肤 - FoodMaker.cs -> AddFood()
+xlua.hotfix(CS.FoodMaker,'AddFood',function(self)
+	self.FoodSkin : Add(CS.HotFixScript.LoadResourceSprite("icecream-03.png", "food3.unity3d"));
+	self.FoodSkin : Add(CS.HotFixScript.LoadResourceSprite("icecream-04.png", "food4.unity3d"));
+	self.FoodSkin : Add(CS.HotFixScript.LoadResourceSprite("icecream-05.png", "food5.unity3d"));
+	self.FoodSkin : Add(CS.HotFixScript.LoadResourceSprite("icecream-06.png", "food6.unity3d"));
+	self.FoodSkin : Add(CS.HotFixScript.LoadResourceSprite("icecream-07.png", "food7.unity3d"));
+	self.FoodSkin : Add(CS.HotFixScript.LoadResourceSprite("icecream-08.png", "food8.unity3d"));
+
+
+end)

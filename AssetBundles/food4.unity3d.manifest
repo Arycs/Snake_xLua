@@ -1,0 +1,18 @@
+ManifestFileVersion: 0
+CRC: 388803854
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: a28f05aada1f77434976c4f78f68ef9e
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: ea5a42e0fd8ea905efa7aa926a3b8944
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+Assets:
+- Assets/Sprites/Icon/Food/icecream-04.png
+Dependencies: []

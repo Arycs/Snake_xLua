@@ -1,0 +1,28 @@
+ManifestFileVersion: 0
+CRC: 2705471744
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: food3.unity3d
+      Dependencies: {}
+    Info_1:
+      Name: food4.unity3d
+      Dependencies: {}
+    Info_2:
+      Name: food5.unity3d
+      Dependencies: {}
+    Info_3:
+      Name: food6.unity3d
+      Dependencies: {}
+    Info_4:
+      Name: food7.unity3d
+      Dependencies: {}
+    Info_5:
+      Name: food8.unity3d
+      Dependencies: {}
+    Info_6:
+      Name: food9.unity3d
+      Dependencies: {}
+    Info_7:
+      Name: food10.unity3d
+      Dependencies: {}
